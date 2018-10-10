@@ -5,7 +5,13 @@ var http = require('http');
 
 asynclib.waterfall([
     function (cb) {
-        cb(null, fs.readFileSync(process.argv[2]).toString());
+        fs.readFile(process.argv[2], function (err, file) {
+            if (err) {
+                cb(err);
+            }
+            cb(null, file.toString());
+        });
+
     },
     function (url, cb) {
         results = '';
@@ -13,7 +19,7 @@ asynclib.waterfall([
             res.on('data', function (portion) {
                 results += portion.toString();
             });
-            res.on('end', () => cb(null, body));
+            res.on('end', () => cb(null, results));
             res.on('error', (err) => cb(err));
         });
     }
