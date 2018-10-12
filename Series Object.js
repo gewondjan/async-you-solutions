@@ -3,31 +3,54 @@ var fs = require('fs');
 var asynclib = require('async');
 var http = require('http');
 
-async.series({
-            requestOne: function (cb) {
-                var result1 = '';
-                http.get(process.argv[2], function (res) {
-                    res.on('data', function (portion) {
-                        result1 += portion.toString();
-                    });
-                    res.on('end', () => cb(null, result1));
-                    res.on('error', (err) => cb(err));
+// console.log(process.argv[0]);
+// console.log(process.argv[1]);
+// console.log(process.argv[2]);
+// console.log(process.argv[3]);
+
+asynclib.series({
+        requestOne: function (cb) {
+            var resultOne = "";
+            http.get(process.argv[2], function (res) {
+                res.on('data', function (portion) {
+                    resultOne += portion.toString();
+                    // console.log(resultOne);
                 });
-            },
-            requestTwo: function (cb) {
-                var result2 = '';
-                http.get(process.argv[2], function (res) {
-                    res.on('data', function (portion) {
-                        result2 += portion.toString();
-                    });
-                    res.on('end', () => cb(null, result2));
-                    res.on('error', (err) => cb(err));
+                res.on('end', () => {
+                    // console.log("in the first end");
+                    cb(null, resultOne);
+
                 });
-            },
-            function (err, results) {
-                if (err) {
-                    console.log("Error: " + err);
-                    return;
-                }
-                console.log(results);
+                res.on('error', (err) => {
+                    // console.log("in the first error");
+                    cb(err);
+
+                });
             });
+        },
+        requestTwo: function (cb) {
+            var resultTwo = "";
+            http.get(process.argv[3], function (res) {
+                res.on('data', function (portion) {
+                    resultTwo += portion.toString();
+                    // console.log("resultTwo: ", resultTwo);
+                });
+                res.on('end', () => {
+                    // console.log("in the second end");
+                    // console.log(resultTwo);
+                    cb(null, resultTwo);
+                });
+                res.on('error', (err) => {
+                    // console.log("in the second error");
+                    cb(err);
+                });
+            });
+        }
+    },
+    function (err, results) {
+        if (err) {
+            console.log("Error: " + err);
+            return;
+        }
+        console.log(results);
+    });
