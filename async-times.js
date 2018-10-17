@@ -3,9 +3,11 @@
 http = require('http');
 asynclib = require('async');
 
-console.log(process.argv[2]);
-console.log(process.argv[3]);
+// console.log(process.argv[2]);
+// console.log(process.argv[3]);
 
+var url = process.argv[2];
+var port = process.argv[3];
 
 asynclib.series([
         function (cb) {
