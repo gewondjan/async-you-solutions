@@ -3,56 +3,76 @@
 const http = require('http');
 const asynclib = require('async');
 
-// console.log(process.argv[2]);
-console.log(process.argv[3]);
+var postOptions = {
+    hostname: process.argv[2],
+    path: '/users/create',
+    method: 'POST',
+    port: process.argv[3]
+};
 
-//Will most likely need to ask for help on this one.
-//Remember your package.lock file has both async and http in it.
+var getOptions = {
+    hostname: process.argv[2],
+    path: '/users',
+    method: 'GET',
+    port: process.argv[3]
+};
 
-asynclib.series([
-        function (cb) {
-            console.log("inside first series function");
-            asynclib.times(5, function (i, cb) {
-                console.log("inside aync times function");
-                var options = {
-                    hostname: process.argv[2],
-                    path: '/users/create',
-                    method: 'POST',
-                    port: process.argv[3]
-                };
-                var req = http.request(options, function (response) {
-                    console.log("inside http request");
-                    response.on('end', function () {
-                        var object = {
-                            user_id: i
-                        };
-                        cb(null, JSON.stringify(object));
-                    });
-                    req.write(JSON.stringify(object));
-                    req.end();
-                });
-            }, function (error, results) {
-                if (error) {
-                    console.error(error);
-                    return;
-                }
+function getUsers(seriesCallBack) {
+    http.get(getOptions, function (response) {
+        var body = '';
+        response.setEncoding('utf8');
+        response.on('data', function (portion) {
+            body += portion;
+        });
+        response.on('end', () => seriesCallBack(null, body));
+        response.on('error', (error) => seriesCallBack(error));
+    });
+}
 
+function createUsers(seriesCallBack) {
+
+    asynclib.times(5, function (i, timesCb) {
+        var userObject = JSON.stringify({
+            user_id: i + 1
+        });
+        var request = http.request(postOptions, function (response) {
+            response.on('data', function (portion) {});
+            response.on('end', () => timesCb(null, userObject));
+            response.on('error', (error) => {
+                return timesCb(error);
             });
-        },
-        function (cb) {
-            console.log("inside second series function");
-            http.get(process.argv[2] + '/users', function (response) {
-                response.on('data', console.log);
-                // response.on('end', () => cb(null));
-            });
-        }
+        });
+
+        request.write(userObject);
+        request.end();
 
 
-    ],
-    function (error, results) {
+    }, function (error, results) {
         if (error) {
-            console.error(error);
+            seriesCallBack(error);
             return;
         }
-        // console.log(results);
+        //Uncomment to debug
+        //console.log(results);
+        seriesCallBack(null, results);
+
+    });
+}
+
+asynclib.series([
+        function (createUserCallBack) {
+            createUsers(createUserCallBack);
+        },
+        function (getUsersCallBack) {
+            getUsers(getUsersCallBack);
+        }
+    ],
+    function (err, results) {
+        if (err) {
+            console.log('Error: ', err);
+            return;
+        }
+
+        console.log(results[1]);
+
     });
